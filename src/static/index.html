@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bokföringsagenten</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      padding: 1.25rem 2rem;
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    header .logo {
+      width: 28px;
+      height: 28px;
+      background: #1d1d1f;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    header .logo svg { width: 16px; height: 16px; fill: white; }
+
+    header h1 {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    header span {
+      font-size: 13px;
+      color: #6e6e73;
+      margin-left: auto;
+    }
+
+    .chat-wrapper {
+      flex: 1;
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      flex-direction: column;
+      padding: 0 1rem;
+      overflow: hidden;
+    }
+
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2rem 0 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      scrollbar-width: none;
+    }
+
+    #messages::-webkit-scrollbar { display: none; }
+
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      color: #6e6e73;
+      padding-bottom: 4rem;
+    }
+
+    .empty-state p:first-child {
+      font-size: 17px;
+      font-weight: 500;
+      color: #1d1d1f;
+    }
+
+    .empty-state p {
+      font-size: 15px;
+    }
+
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-top: 1rem;
+    }
+
+    .suggestion-chip {
+      background: white;
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 20px;
+      padding: 0.5rem 1rem;
+      font-size: 13px;
+      color: #1d1d1f;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .suggestion-chip:hover { background: #e8e8ed; }
+
+    .bubble {
+      max-width: 80%;
+      padding: 0.75rem 1rem;
+      border-radius: 18px;
+      font-size: 15px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .bubble.user {
+      background: #1d1d1f;
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 6px;
+    }
+
+    .bubble.agent {
+      background: white;
+      color: #1d1d1f;
+      align-self: flex-start;
+      border-bottom-left-radius: 6px;
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    .bubble.loading {
+      background: white;
+      border: 1px solid rgba(0,0,0,0.08);
+      align-self: flex-start;
+      border-bottom-left-radius: 6px;
+    }
+
+    .dots {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      height: 20px;
+    }
+
+    .dots span {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #c7c7cc;
+      animation: bounce 1.2s infinite ease-in-out;
+    }
+
+    .dots span:nth-child(2) { animation-delay: 0.2s; }
+    .dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0.7); }
+      40% { transform: scale(1); }
+    }
+
+    .input-area {
+      padding: 1rem 0 1.5rem;
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-end;
+    }
+
+    #user-input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 1px solid rgba(0,0,0,0.12);
+      border-radius: 22px;
+      font-size: 15px;
+      font-family: inherit;
+      background: white;
+      outline: none;
+      resize: none;
+      max-height: 140px;
+      overflow-y: auto;
+      line-height: 1.5;
+      transition: border-color 0.15s;
+    }
+
+    #user-input:focus { border-color: rgba(0,0,0,0.3); }
+    #user-input::placeholder { color: #aeaeb2; }
+
+    #send-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #1d1d1f;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    #send-btn:hover { background: #3d3d3f; }
+    #send-btn:active { transform: scale(0.95); }
+    #send-btn:disabled { background: #c7c7cc; cursor: default; }
+
+    #send-btn svg { width: 18px; height: 18px; fill: white; }
+
+    .error-toast {
+      background: #fff2f2;
+      border: 1px solid #ffcccc;
+      color: #d00;
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      font-size: 14px;
+      align-self: center;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-7 14H8v-2h4v2zm4-4H8v-2h8v2zm0-4H8V7h8v2z"/>
+    </svg>
+  </div>
+  <h1>Bokföringsagenten</h1>
+  <span>Powered by Claude</span>
+</header>
+
+<div class="chat-wrapper">
+  <div id="messages">
+    <div class="empty-state" id="empty-state">
+      <p>Hej! Vad kan jag hjälpa dig med?</p>
+      <p>Ställ en fråga om bokföring, moms eller BAS-konton.</p>
+      <div class="suggestions">
+        <button class="suggestion-chip" onclick="sendSuggestion('Vad är momsen på kaffe?')">Moms på kaffe?</button>
+        <button class="suggestion-chip" onclick="sendSuggestion('Vilket BAS-konto för kontorsmaterial?')">BAS-konto kontorsmaterial</button>
+        <button class="suggestion-chip" onclick="sendSuggestion('Hur bokför jag en resekostnad?')">Bokföra resekostnad</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <textarea id="user-input" placeholder="Skriv din fråga…" rows="1"></textarea>
+    <button id="send-btn" onclick="sendMessage()" title="Skicka">
+      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  const input = document.getElementById('user-input');
+  const messages = document.getElementById('messages');
+  const sendBtn = document.getElementById('send-btn');
+  const emptyState = document.getElementById('empty-state');
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+  });
+
+  function sendSuggestion(text) {
+    input.value = text;
+    sendMessage();
+  }
+
+  function addBubble(text, type) {
+    if (emptyState) emptyState.style.display = 'none';
+    const bubble = document.createElement('div');
+    bubble.className = `bubble ${type}`;
+    if (type === 'loading') {
+      bubble.innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
+    } else {
+      bubble.textContent = text;
+    }
+    messages.appendChild(bubble);
+    messages.scrollTop = messages.scrollHeight;
+    return bubble;
+  }
+
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    sendBtn.disabled = true;
+
+    addBubble(text, 'user');
+    const loader = addBubble('', 'loading');
+
+    try {
+      const res = await fetch('http://127.0.0.1:8000/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+
+      if (!res.ok) throw new Error('Serverfel');
+      const data = await res.json();
+      loader.remove();
+      addBubble(data.svar, 'agent');
+    } catch (err) {
+      loader.remove();
+      const errBubble = document.createElement('div');
+      errBubble.className = 'error-toast';
+      errBubble.textContent = 'Kunde inte nå agenten. Kontrollera att servern är igång.';
+      messages.appendChild(errBubble);
+      messages.scrollTop = messages.scrollHeight;
+    } finally {
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  }
+</script>
+</body>
+</html>
