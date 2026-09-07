@@ -17,10 +17,13 @@ A demo project that uses the Claude API to interpret receipts, extract key data,
 - Receipt interpretation via AI
 - Expense categorization using Swedish BAS account codes
 - VAT (moms) extraction
+- Conversational bookkeeping using Swedish BAS account codes
+- Clean web interface
 
-## Getting Started
+## Run with docker
 
-Coming soon.
+```bash
+docker run -p 8000:000 --env-file .env gabrielfernandez2258/bokforingsagent
 
 ## Roadmap
 
